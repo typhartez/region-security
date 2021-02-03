@@ -1,9 +1,12 @@
 // Region Security - avatars scanning on a region
 // Copyright 2021 Typhaine Artez
 // Based on ideas from gimisa@yahoo.fr (script testBanIPName140531)
+// latest version always available at: https://github.com/typhartez/region-security
 //
 // Provided under Creative Commons Attribution-Non-Commercial-ShareAlike 4.0 International license.
 // Please be sure you read and adhere to the terms of this license: https://creativecommons.org/licenses/by-nc-sa/4.0/
+//
+// 1.1 2021/02/04 - fixed a bug in grid ban
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Options
@@ -263,7 +266,7 @@ string isBanned(key agent, string name, string IP) {
         // check if the whole grid is banned
         pos = llSubStringIndex(name, " @");
         if (!llSubStringIndex(entry, "@")) {
-            if (-1 != pos && llGetSubString(entry, 1, -1) == llGetSubString(name, pos+1, -1))
+            if (-1 != pos && llGetSubString(entry, 1, -1) == llGetSubString(name, pos+2, -1))
                 return "grid banned";
         }
         // then check name
@@ -461,23 +464,26 @@ default {
             llResetScript();
         }
         if (CHANGED_INVENTORY & c) {
-            if (llGetInventoryKey("config") != ncConfig) loadConfig();
-            if (llGetInventoryKey("banlist") != ncBanlist) loadBanlist();
-            if (llGetInventoryKey("whitelist") != ncWhitelist) loadWhitelist();
-            if (llGetInventoryKey("kicklist") != ncKicklist) loadKicklist();
-            lastScan = [];
-            if (INVENTORY_NOTECARD != llGetInventoryType(".inactive") && 0 < scanTime) llSetTimerEvent(0.5);
+            if (INVENTORY_NOTECARD != llGetInventoryType(".inactive")) {
+                if (llGetInventoryKey("config") != ncConfig) loadConfig();
+                if (llGetInventoryKey("banlist") != ncBanlist) loadBanlist();
+                if (llGetInventoryKey("whitelist") != ncWhitelist) loadWhitelist();
+                if (llGetInventoryKey("kicklist") != ncKicklist) loadKicklist();
+                lastScan = [];
+                if (0 < scanTime) llSetTimerEvent(0.5);
+            }
         }
         if ((CHANGED_REGION | CHANGED_REGION_RESTART) & c) menu_chan = 0;
     }
     // ---------------------------------------------------------------------------------------------
     state_entry() {
-        llSetText("", ZERO_VECTOR, 0.0);
-        loadConfig();
-        loadBanlist();
-        loadWhitelist();
-        loadKicklist();
-        if (INVENTORY_NOTECARD != llGetInventoryType(".inactive") && 0 < scanTime) llSetTimerEvent(0.5);
+        if (INVENTORY_NOTECARD != llGetInventoryType(".inactive")) {
+            loadConfig();
+            loadBanlist();
+            loadWhitelist();
+            loadKicklist();
+            if (0 < scanTime) llSetTimerEvent(0.5);
+        }
     }
     // ---------------------------------------------------------------------------------------------
     timer() {
